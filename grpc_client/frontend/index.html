@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página com Input e Requests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #f0f0f0;
+        }
+
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #fafafa;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <input type="text" id="palavraInput" placeholder="Digite uma palavra">
+        <button id="sendButton">Confirmar</button>
+        <button id="printButton">Imprimir</button>
+        <button id="clearButton">Limpar</button>
+        <div id="output"></div>
+    </div>
+
+    <script>
+        const palavraInput = document.getElementById('palavraInput');
+        const sendButton = document.getElementById('sendButton');
+        const printButton = document.getElementById('printButton');
+        const clearButton = document.getElementById('clearButton');
+        const outputDiv = document.getElementById('output');
+
+        sendButton.addEventListener('click', () => {
+            const palavra = palavraInput.value.trim();
+            console.log(palavra);
+
+            if (palavra && palavra.indexOf(' ') === -1) {
+                fetch('http://localhost:3000/adicionar-palavra', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ "palavra": palavra })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Palavra enviada com sucesso!');
+                })
+                .catch(error => {
+                    alert('Erro ao enviar a palavra.');
+                    console.error(error);
+                });
+            } else {
+                alert('Digite apenas uma palavra sem espaços.');
+            }
+        });
+
+        printButton.addEventListener('click', () => {
+            fetch('http://localhost:3000/imprimir')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        outputDiv.innerHTML = '<table><thead><tr><th>Palavra</th><th>Qtd. Ocorrências</th></tr></thead><tbody></tbody></table>';
+                        const tableBody = outputDiv.querySelector('tbody');                        
+
+                        data.message.split('\n').forEach(word => {
+                            const [palavra, qtdOcorrencia] = word.split(':');
+
+                            if (!palavra) {
+                                return;
+                            }
+
+                            const row = document.createElement('tr');
+
+                            row.innerHTML = `
+                                <td>${palavra}</td>
+                                <td>${qtdOcorrencia}</td>
+                            `;
+
+                            tableBody.appendChild(row);
+                        });
+
+                    }
+
+                    if (data.error) {
+                        outputDiv.textContent += '\n\nErro:\n';
+                        outputDiv.textContent += data.error;
+                    }
+
+                })
+                .catch(error => {
+                    alert('Erro ao obter os dados.');
+                    console.error(error);
+                });
+        });
+
+        clearButton.addEventListener('click', () => {
+            outputDiv.textContent = '';
+        });
+    </script>
+</body>
+</html>
